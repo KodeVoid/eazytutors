@@ -1,0 +1,21 @@
+[package]
+name = "tutor-nodb"
+version = "0.1.0"
+authors=["kodevoid"]
+edition = "2024"
+default-run ="tutor-service"
+
+[[bin]]
+name="basic-server"
+path="src/bin/basic_server.rs"
+
+[[bin]]
+name="tutor-service"
+path="src/bin/tutor_service.rs"
+
+
+[dependencies]
+actix-rt = "2.7.0"
+actix-web = "4.2.1"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
