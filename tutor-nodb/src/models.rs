@@ -1,17 +1,23 @@
 use actix_web::web;
 use chrono::NaiveDateTime;
-use serde::{Deserialize,Serialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug,Serialize,Deserialize,Clone)]
-pub struct Course{
-	pub tutor_id:i32,
-	pub course_id:Option<i32>,
-	pub course_name:String,
-	pub posted_time:Option<NaiveDateTime>,
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Course {
+    pub tutor_id: i32,
+    pub course_id: Option<i32>,
+    pub course_name: String,
+    pub posted_time: Option<NaiveDateTime>,
 }
 
 impl From<web::Json<Course>> for Course {
-	unimplemented!();
-} {
-	// add code here
+    fn from(course: web::Json<Course>) -> Self {
+        Course {
+            tutor_id: course.tutor_id,
+            course_id: course.course_id,
+            course_name: course.course_name.clone(),
+            posted_time: course.posted_time,
+        }
+    }
+    // add code here
 }
