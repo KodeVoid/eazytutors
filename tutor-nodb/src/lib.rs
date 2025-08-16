@@ -3,19 +3,19 @@ use std::io;
 use std::net::TcpListener;
 use std::sync::Mutex;
 
-#[path = "../handlers.rs"]
+#[path = "handlers.rs"]
 mod handlers;
-#[path = "../models.rs"]
+#[path = "models.rs"]
 mod models;
-#[path = "../routes.rs"]
+#[path = "routes.rs"]
 mod routes;
-#[path = "../state.rs"]
+#[path = "state.rs"]
 mod state;
 
 use routes::{course_routes, general_routes};
 use state::AppState;
 
-fn run(listener: TcpListener) -> Result<Server, io::Error> {
+pub fn run(listener: TcpListener) -> Result<Server, io::Error> {
     let shared_data = web::Data::new(AppState {
         health_check_response: "Tutor Services running fine".to_string(),
         visit_count: Mutex::new(0u32),
@@ -31,10 +31,4 @@ fn run(listener: TcpListener) -> Result<Server, io::Error> {
 
     let server = HttpServer::new(app).listen(listener)?.run();
     Ok(server)
-}
-
-#[actix_rt::main]
-async fn main() -> io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
-    run(listener)?.await
 }

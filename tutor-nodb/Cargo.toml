@@ -3,7 +3,7 @@ name = "tutor-nodb"
 version = "0.1.0"
 authors=["kodevoid"]
 edition = "2024"
-default-run ="tutor-service"
+default-run ="tutor-nodb"
 
 [[bin]]
 name="basic-server"
@@ -12,6 +12,9 @@ path="src/bin/basic_server.rs"
 [[bin]]
 name="tutor-service"
 path="src/bin/tutor_service.rs"
+
+[lib]
+path="src/lib.rs"
 
 
 [dependencies]
