@@ -13,7 +13,7 @@ pub async fn health_check_handler() -> impl Responder {
 }
 
 // Instantiaite the server
-#[actix_rt::main]
+#[tokio::main]
 async fn main() -> io::Result<()> {
     // construct the app and configure routes
     let app = move || App::new().configure(general_routes);
