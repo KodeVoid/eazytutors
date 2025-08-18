@@ -9,9 +9,6 @@ default-run ="tutor-nodb"
 name="basic-server"
 path="src/bin/basic_server.rs"
 
-[[bin]]
-name="tutor-service"
-path="src/bin/tutor_service.rs"
 
 [lib]
 path="src/lib.rs"
@@ -20,7 +17,9 @@ path="src/lib.rs"
 [dependencies]
 actix-web = "4.2.1"
 chrono = { version = "0.4", features = ["serde"] }
+dotenvy = "0.15.7"
 reqwest = { version = "0.12.23", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.142"
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio"] }
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }

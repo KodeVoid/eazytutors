@@ -1,15 +1,17 @@
 use std::net::TcpListener;
-use tutor_nodb::run;
+use tutor_nodb::{run,connect_db};
 use serde_json;
-
-fn spawn_app() -> String {
+use tokio::runtime::Handle;
+async fn spawn_app() -> String {
     // Bind to a random available port
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind port");
     let port = listener.local_addr().unwrap().port();
-    let server = run(listener).expect("Failed to start server");
-    
+       let pool = connect_db().await.expect("Failed to connect to DB");
+
+
+    let server = run(listener,pool).expect("Failed to start server");
     // Spawn the server on a background task
-    tokio::spawn(server);
+    tokio::spawn(server); 
     
     format!("http://127.0.0.1:{}", port)
 }
@@ -17,7 +19,7 @@ fn spawn_app() -> String {
 #[tokio::test]
 async fn health_check_works() {
     // Spawn app
-    let address = spawn_app();
+    let address = spawn_app().await;
     
     // Give the server a moment to start up
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -39,7 +41,7 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn test_course_creation() {
-    let address = spawn_app();
+    let address = spawn_app().await;
     
     // Give the server a moment to start up
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -71,7 +73,7 @@ async fn test_course_creation() {
 
 #[tokio::test]
 async fn test_get_tutor_courses() {
-    let address = spawn_app();
+    let address = spawn_app().await;
     
     // Give the server a moment to start up
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -124,7 +126,7 @@ async fn test_get_tutor_courses() {
 
 #[tokio::test]
 async fn test_get_course_details() {
-    let address = spawn_app();
+    let address = spawn_app().await;
     
     // Give the server a moment to start up
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
@@ -169,7 +171,7 @@ async fn test_get_course_details() {
 
 #[tokio::test]
 async fn test_course_not_found() {
-    let address = spawn_app();
+    let address = spawn_app().await;
     
     // Give the server a moment to start up
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
