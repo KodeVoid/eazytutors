@@ -1,17 +1,17 @@
 use std::net::TcpListener;
-use tutor_nodb::{run,connect_db};
+use tutor_nodb::{run, connect_db};
 use serde_json;
-use tokio::runtime::Handle;
+use uuid::Uuid;
+
 async fn spawn_app() -> String {
     // Bind to a random available port
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind port");
     let port = listener.local_addr().unwrap().port();
-       let pool = connect_db().await.expect("Failed to connect to DB");
+    let pool = connect_db().await.expect("Failed to connect to DB");
 
-
-    let server = run(listener,pool).expect("Failed to start server");
+    let server = run(listener, pool).expect("Failed to start server");
     // Spawn the server on a background task
-    tokio::spawn(server); 
+    tokio::spawn(server);
     
     format!("http://127.0.0.1:{}", port)
 }
@@ -48,15 +48,36 @@ async fn test_course_creation() {
     
     let client = reqwest::Client::new();
     
+    // First create a tutor
+    let tutor = serde_json::json!({
+        "name": "kendrick",
+        "email": "kendrick@gmail.com"
+    });
+    
+    let tutor_response = client
+        .post(&format!("{}/tutors/", &address))
+        .header("Content-Type", "application/json")
+        .json(&tutor)
+        .send()
+        .await
+        .expect("Failed to create tutor");
+    
+    assert!(tutor_response.status().is_success());
+    
+    // Get the tutor_id from the response
+    let tutor_id: Uuid = tutor_response
+        .json()
+        .await
+        .expect("Failed to parse tutor_id");
+    
     // Test POST to create a course with correct structure
     let new_course = serde_json::json!({
-        "tutor_id": 123,
-        "course_id": 456,
+        "tutor_id": tutor_id.to_string(),
         "course_name": "Test Course for Integration Testing"
     });
     
     let response = client
-        .post(&format!("{}/courses/", address))
+        .post(&format!("{}/courses/", &address))
         .header("Content-Type", "application/json")
         .json(&new_course)
         .send()
@@ -68,7 +89,7 @@ async fn test_course_creation() {
     
     // Check response body
     let body = response.text().await.expect("Failed to read response body");
-    assert!(body.contains("Added course for tutor 123"));
+    assert!(body.contains(&format!("Added course for tutor {}", tutor_id)));
 }
 
 #[tokio::test]
@@ -80,24 +101,42 @@ async fn test_get_tutor_courses() {
     
     let client = reqwest::Client::new();
     
-    // First, create a course
+    // First create a tutor
+    let tutor = serde_json::json!({
+        "name": "test_tutor",
+        "email": "test@example.com"
+    });
+    
+    let tutor_response = client
+        .post(&format!("{}/tutors/", &address))
+        .header("Content-Type", "application/json")
+        .json(&tutor)
+        .send()
+        .await
+        .expect("Failed to create tutor");
+    
+    let tutor_id: Uuid = tutor_response
+        .json()
+        .await
+        .expect("Failed to parse tutor_id");
+    
+    // Create a course for this tutor
     let new_course = serde_json::json!({
-        "tutor_id": 123,
-        "course_id": 456,
+        "tutor_id": tutor_id.to_string(),
         "course_name": "Test Course"
     });
     
     let _create_response = client
-        .post(&format!("{}/courses/", address))
+        .post(&format!("{}/courses/", &address))
         .header("Content-Type", "application/json")
         .json(&new_course)
         .send()
         .await
         .expect("Failed to create course.");
     
-    // Then, retrieve courses for this tutor
+    // Then, retrieve courses for this tutor using the correct endpoint
     let response = client
-        .get(&format!("{}/courses/tutor/123", address))
+        .get(&format!("{}/tutors/{}/courses", &address, tutor_id))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -118,10 +157,10 @@ async fn test_get_tutor_courses() {
     
     // Check course details
     let course = &courses_array[0];
-    assert_eq!(123, course["tutor_id"]);
-    assert_eq!(456, course["course_id"]);
+    assert_eq!(tutor_id.to_string(), course["tutor_id"].as_str().unwrap());
     assert_eq!("Test Course", course["course_name"]);
     assert!(course["posted_time"].is_string());
+    assert!(course["course_id"].is_string());
 }
 
 #[tokio::test]
@@ -133,24 +172,58 @@ async fn test_get_course_details() {
     
     let client = reqwest::Client::new();
     
-    // First, create a course
+    // First create a tutor
+    let tutor = serde_json::json!({
+        "name": "detail_tutor",
+        "email": "detail@example.com"
+    });
+    
+    let tutor_response = client
+        .post(&format!("{}/tutors/", &address))
+        .header("Content-Type", "application/json")
+        .json(&tutor)
+        .send()
+        .await
+        .expect("Failed to create tutor");
+    
+    let tutor_id: Uuid = tutor_response
+        .json()
+        .await
+        .expect("Failed to parse tutor_id");
+    
+    // Create a course
     let new_course = serde_json::json!({
-        "tutor_id": 123,
-        "course_id": 789,
+        "tutor_id": tutor_id.to_string(),
         "course_name": "Detailed Test Course"
     });
     
-    let _create_response = client
-        .post(&format!("{}/courses/", address))
+    let create_response = client
+        .post(&format!("{}/courses/", &address))
         .header("Content-Type", "application/json")
         .json(&new_course)
         .send()
         .await
         .expect("Failed to create course.");
     
+    assert!(create_response.status().is_success());
+    
+    // Get the courses to find the course_id
+    let courses_response = client
+        .get(&format!("{}/tutors/{}/courses", &address, tutor_id))
+        .send()
+        .await
+        .expect("Failed to get courses");
+    
+    let courses: serde_json::Value = courses_response
+        .json()
+        .await
+        .expect("Failed to parse courses");
+    
+    let course_id = courses[0]["course_id"].as_str().unwrap();
+    
     // Then, get specific course details
     let response = client
-        .get(&format!("{}/courses/789", address))
+        .get(&format!("{}/courses/{}", &address, course_id))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -163,8 +236,8 @@ async fn test_get_course_details() {
         .await
         .expect("Failed to parse JSON response");
     
-    assert_eq!(123, course["tutor_id"]);
-    assert_eq!(789, course["course_id"]);
+    assert_eq!(tutor_id.to_string(), course["tutor_id"].as_str().unwrap());
+    assert_eq!(course_id, course["course_id"].as_str().unwrap());
     assert_eq!("Detailed Test Course", course["course_name"]);
     assert!(course["posted_time"].is_string());
 }
@@ -178,9 +251,12 @@ async fn test_course_not_found() {
     
     let client = reqwest::Client::new();
     
+    // Generate a random UUID that definitely doesn't exist
+    let non_existent_id = Uuid::new_v4();
+    
     // Try to get a non-existent course
     let response = client
-        .get(&format!("{}/courses/999", address))
+        .get(&format!("{}/courses/{}", &address, non_existent_id))
         .send()
         .await
         .expect("Failed to execute request.");
@@ -188,5 +264,57 @@ async fn test_course_not_found() {
     assert_eq!(404, response.status().as_u16());
     
     let body = response.text().await.expect("Failed to read response body");
-    assert!(body.contains("Course with ID 999 not found"));
+    assert!(body.contains(&format!("Course with ID {} not found", non_existent_id)));
+}
+
+#[tokio::test]
+async fn test_get_tutor_id_by_details() {
+    let address = spawn_app().await;
+    
+    // Give the server a moment to start up
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    
+    let client = reqwest::Client::new();
+    
+    // First create a tutor
+    let tutor = serde_json::json!({
+        "name": "lookup_tutor",
+        "email": "lookup@example.com"
+    });
+    
+    let tutor_response = client
+        .post(&format!("{}/tutors/", &address))
+        .header("Content-Type", "application/json")
+        .json(&tutor)
+        .send()
+        .await
+        .expect("Failed to create tutor");
+    
+    let expected_tutor_id: Uuid = tutor_response
+        .json()
+        .await
+        .expect("Failed to parse tutor_id");
+    
+    // Now lookup the tutor by name and email
+    let lookup_data = serde_json::json!({
+        "name": "lookup_tutor",
+        "email": "lookup@example.com"
+    });
+    
+    let lookup_response = client
+        .post(&format!("{}/tutors/id", &address))
+        .header("Content-Type", "application/json")
+        .json(&lookup_data)
+        .send()
+        .await
+        .expect("Failed to lookup tutor");
+    
+    assert!(lookup_response.status().is_success());
+    
+    let found_tutor_id: Uuid = lookup_response
+        .json()
+        .await
+        .expect("Failed to parse found tutor_id");
+    
+    assert_eq!(expected_tutor_id, found_tutor_id);
 }

@@ -23,7 +23,8 @@ pub fn run(listener: TcpListener,db_pool:PgPool) -> Result<Server, io::Error> {
         health_check_response: "Tutor Services running fine".to_string(),
         visit_count: Mutex::new(0u32),
         courses: Mutex::new(vec![]),
-        db_pool:db_pool
+        db_pool:db_pool,
+        tutors:Mutex::new(vec![])
     });
 
     let app = move || {

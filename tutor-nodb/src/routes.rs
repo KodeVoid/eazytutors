@@ -1,6 +1,4 @@
-use super::handlers::{
-    get_course_details, get_tutor_courses_handler, health_check_handler, new_course_handler,
-};
+use super::handlers::*;
 use actix_web::web;
 
 pub fn general_routes(cfg: &mut web::ServiceConfig) {
@@ -10,11 +8,14 @@ pub fn general_routes(cfg: &mut web::ServiceConfig) {
 pub fn course_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/courses")
-            .route("/", web::post().to(new_course_handler))
-            .route(
-                "/tutor/{tutor_id}",
-                web::get().to(get_tutor_courses_handler),
-            )
-            .route("/{course_id}", web::get().to(get_course_details)),
+            .route("/", web::post().to(new_course_handler)) // POST /courses
+            .route("/{course_id}", web::get().to(get_course_details)), // GET /courses/{id}
+    );
+
+    cfg.service(
+        web::scope("/tutors")
+            .route("/", web::post().to(create_new_tutor)) // POST /tutors
+            .route("/id", web::post().to(get_tutor_id)) // POST /tutors/id (lookup by name/email)
+            .route("/{tutor_id}/courses", web::get().to(get_tutor_courses_handler)), // GET /tutors/{id}/courses
     );
 }

@@ -1,11 +1,11 @@
 use actix_web::web;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-
+use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Course {
-    pub tutor_id: u32,
-    pub course_id: u32,
+    pub tutor_id: Uuid,
+    pub course_id: Uuid,
     pub course_name: String,
     pub posted_time: Option<NaiveDateTime>,
 }
@@ -15,13 +15,12 @@ impl From<web::Json<Course>> for Course {
         match course.posted_time {
             Some(time) => Self::new(
                 course.tutor_id,
-                course.course_id,
+                
                 course.course_name.clone(),
                 Some(time),
             ),
             None => Self::with_current_time(
                 course.tutor_id,
-                course.course_id,
                 course.course_name.clone(),
             ),
         }
@@ -29,23 +28,22 @@ impl From<web::Json<Course>> for Course {
 }
 impl Course {
     pub fn new(
-        tutor_id: u32,
-        course_id: u32,
+        tutor_id: Uuid,
         course_name: String,
         posted_time: Option<NaiveDateTime>,
     ) -> Self {
         Course {
             tutor_id,
-            course_id,
+            course_id:Uuid::new_v4(),
             course_name,
             posted_time,
         }
     }
 
-    pub fn with_current_time(tutor_id: u32, course_id: u32, course_name: String) -> Self {
+    pub fn with_current_time(tutor_id: Uuid, course_name: String) -> Self {
         Course {
             tutor_id,
-            course_id,
+            course_id:Uuid::new_v4(),
             course_name,
             posted_time: Some(chrono::Utc::now().naive_utc()),
         }
@@ -55,7 +53,22 @@ impl Course {
         self.posted_time = Some(chrono::Utc::now().naive_utc());
     }
 
-    pub fn is_posted_by_tutor(&self, tutor_id: u32) -> bool {
+    pub fn is_posted_by_tutor(&self, tutor_id: Uuid) -> bool {
         self.tutor_id == tutor_id
     }
 }
+
+#[derive(Debug,Serialize,Deserialize)]
+pub struct Tutor {
+    pub name:String,
+    pub email:String,
+    pub tutor_id:Uuid,
+}
+
+impl Tutor{
+    pub fn new(name:String,email:String) ->Self{
+        Tutor{
+            name,
+            email,
+            tutor_id:Uuid::new_v4()}
+}}
