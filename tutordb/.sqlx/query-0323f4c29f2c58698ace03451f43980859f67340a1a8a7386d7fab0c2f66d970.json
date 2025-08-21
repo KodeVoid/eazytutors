@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO tutor (id, name, email, courses, rating)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING id, name, email, courses, rating as \"rating:bigdecimal::BigDecimal\"\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "courses",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "rating:bigdecimal::BigDecimal",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Numeric"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0323f4c29f2c58698ace03451f43980859f67340a1a8a7386d7fab0c2f66d970"
+}
